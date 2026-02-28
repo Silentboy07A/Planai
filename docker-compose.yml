@@ -10,7 +10,7 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
-      - MONGODB_URI=mongodb://mongo:27017/plantscope
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/plantscope}
       - ML_SERVICE_URL=http://ml-service:8000
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - JWT_SECRET=${JWT_SECRET:-plantscope-dev-secret}

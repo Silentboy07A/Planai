@@ -1,11 +1,15 @@
 """
 Plant Scope AI — ML Service
-ViT-based plant disease classification + Gemini LLM treatment advice.
+Dual-model plant disease detection:
+  1. ViT classifier (PlantVillage 38 classes) — fast, offline
+  2. Gemini Vision (any plant) — broader coverage, handles house plants
+Plus Gemini LLM for treatment advice.
 """
 
 import os
 import json
 import io
+import base64
 import logging
 from contextlib import asynccontextmanager
 
@@ -24,19 +28,23 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Globals (loaded at startup)
 # ---------------------------------------------------------------------------
-model = None
-processor = None
+vit_model = None
+vit_processor = None
 plant_classes = {}
-gemini_model = None
+gemini_text_model = None
+gemini_vision_model = None
 
-MODEL_NAME = "google/vit-base-patch16-224"
+VIT_MODEL_NAME = "google/vit-base-patch16-224"
 CLASSES_FILE = os.path.join(os.path.dirname(__file__), "plant_classes.json")
+
+# Confidence threshold: if ViT confidence is below this, use Gemini Vision
+VIT_CONFIDENCE_THRESHOLD = 40.0  # percent
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load ViT model + class map on startup."""
-    global model, processor, plant_classes, gemini_model
+    """Load models on startup."""
+    global vit_model, vit_processor, plant_classes, gemini_text_model, gemini_vision_model
 
     # 1. Load class labels
     with open(CLASSES_FILE, "r") as f:
@@ -44,28 +52,27 @@ async def lifespan(app: FastAPI):
     logger.info(f"Loaded {len(plant_classes)} plant disease classes")
 
     # 2. Load ViT model
-    logger.info(f"Loading ViT model: {MODEL_NAME} ...")
-    processor = ViTImageProcessor.from_pretrained(MODEL_NAME)
-    model = ViTForImageClassification.from_pretrained(
-        MODEL_NAME,
+    logger.info(f"Loading ViT model: {VIT_MODEL_NAME} ...")
+    vit_processor = ViTImageProcessor.from_pretrained(VIT_MODEL_NAME)
+    vit_model = ViTForImageClassification.from_pretrained(
+        VIT_MODEL_NAME,
         num_labels=len(plant_classes),
         ignore_mismatched_sizes=True,
     )
-    model.eval()
+    vit_model.eval()
     logger.info("ViT model loaded successfully")
 
-    # 3. Init Gemini
+    # 3. Init Gemini (text + vision)
     api_key = os.getenv("GEMINI_API_KEY")
     if api_key:
         genai.configure(api_key=api_key)
-        gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-        logger.info("Gemini LLM configured")
+        gemini_text_model = genai.GenerativeModel("gemini-1.5-flash")
+        gemini_vision_model = genai.GenerativeModel("gemini-1.5-flash")
+        logger.info("Gemini (text + vision) configured")
     else:
-        logger.warning("No GEMINI_API_KEY — LLM treatment advice disabled")
+        logger.warning("No GEMINI_API_KEY — Gemini Vision + treatment advice disabled")
 
-    yield  # App runs here
-
-    # Cleanup
+    yield
     logger.info("Shutting down ML service")
 
 
@@ -74,7 +81,7 @@ async def lifespan(app: FastAPI):
 # ---------------------------------------------------------------------------
 app = FastAPI(
     title="Plant Scope AI — ML Service",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -87,32 +94,137 @@ app.add_middleware(
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Model 1: ViT Classifier (PlantVillage)
 # ---------------------------------------------------------------------------
-def classify_image(image: Image.Image) -> dict:
-    """Run ViT inference on a PIL image. Returns {disease, confidence}."""
-    inputs = processor(images=image, return_tensors="pt")
+def classify_with_vit(image: Image.Image) -> dict:
+    """Run ViT inference. Returns {disease, confidence, model_used}."""
+    inputs = vit_processor(images=image, return_tensors="pt")
 
     with torch.no_grad():
-        outputs = model(**inputs)
+        outputs = vit_model(**inputs)
         logits = outputs.logits
         probs = torch.nn.functional.softmax(logits, dim=-1)
 
     predicted_idx = probs.argmax(-1).item()
-    confidence = probs[0, predicted_idx].item()
+    confidence = round(probs[0, predicted_idx].item() * 100, 2)
 
     disease_name = plant_classes.get(str(predicted_idx), f"Unknown ({predicted_idx})")
 
     return {
         "disease": disease_name,
-        "confidence": round(confidence * 100, 2),
+        "confidence": confidence,
         "class_index": predicted_idx,
+        "model_used": "ViT (PlantVillage)",
     }
 
 
+# ---------------------------------------------------------------------------
+# Model 2: Gemini Vision (any plant — house plants, flowers, herbs)
+# ---------------------------------------------------------------------------
+async def classify_with_gemini_vision(image: Image.Image) -> dict:
+    """Use Gemini Vision to identify plant disease from image. Works for ANY plant."""
+    if not gemini_vision_model:
+        return None
+
+    # Convert PIL image to bytes
+    img_bytes = io.BytesIO()
+    image.save(img_bytes, format="JPEG")
+    img_bytes.seek(0)
+
+    prompt = """You are an expert plant pathologist specializing in house-grown, indoor, and small garden plants
+including herbs (mint, tulsi, basil, coriander, rosemary, oregano), flowers (rose, hibiscus, marigold,
+jasmine, dahlia, lavender), vegetables (tomato, chilli, capsicum, spinach), fruits (strawberry, lemon,
+guava, mango, banana, grapes), and other common house plants (aloe vera, drumstick/moringa, curry leaves).
+
+Analyze this plant leaf image and identify:
+1. The plant species (if identifiable)
+2. Any disease or health issue visible
+3. Your confidence level (0-100%)
+
+Respond in EXACTLY this JSON format, nothing else:
+{"plant": "plant name", "disease": "disease name or Healthy", "confidence": 85}
+
+If the plant looks healthy, set disease to "Healthy".
+If you cannot identify the plant, still try to identify any visible disease symptoms."""
+
+    try:
+        img_part = {
+            "mime_type": "image/jpeg",
+            "data": img_bytes.getvalue(),
+        }
+
+        response = await gemini_vision_model.generate_content_async([prompt, img_part])
+        text = response.text.strip()
+
+        # Parse JSON from response
+        # Handle potential markdown code blocks
+        if "```" in text:
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+            text = text.strip()
+
+        result = json.loads(text)
+
+        plant_name = result.get("plant", "Unknown")
+        disease = result.get("disease", "Unknown")
+        confidence = float(result.get("confidence", 50))
+
+        # Format disease name with plant name
+        if disease.lower() == "healthy":
+            full_name = f"{plant_name} — Healthy"
+        else:
+            full_name = f"{plant_name} — {disease}"
+
+        return {
+            "disease": full_name,
+            "confidence": confidence,
+            "class_index": -1,
+            "model_used": "Gemini Vision",
+            "plant_identified": plant_name,
+        }
+
+    except Exception as e:
+        logger.error(f"Gemini Vision error: {e}")
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Smart Detection: ViT first, Gemini Vision fallback
+# ---------------------------------------------------------------------------
+async def smart_classify(image: Image.Image) -> dict:
+    """
+    Dual-model detection:
+    1. Try ViT (fast, offline) — great for PlantVillage crops
+    2. If confidence is low, use Gemini Vision (broader coverage for house plants)
+    """
+    # Step 1: ViT classification
+    vit_result = classify_with_vit(image)
+    logger.info(f"ViT result: {vit_result['disease']} ({vit_result['confidence']}%)")
+
+    # Step 2: If ViT is confident enough, use it
+    if vit_result["confidence"] >= VIT_CONFIDENCE_THRESHOLD:
+        return vit_result
+
+    # Step 3: Low confidence → try Gemini Vision for better coverage
+    logger.info(f"ViT confidence ({vit_result['confidence']}%) below threshold, trying Gemini Vision...")
+    gemini_result = await classify_with_gemini_vision(image)
+
+    if gemini_result:
+        logger.info(f"Gemini Vision result: {gemini_result['disease']} ({gemini_result['confidence']}%)")
+        return gemini_result
+
+    # Step 4: Gemini Vision unavailable/failed, return ViT result anyway
+    logger.warning("Gemini Vision unavailable, returning ViT result")
+    return vit_result
+
+
+# ---------------------------------------------------------------------------
+# Treatment Advice (Gemini LLM)
+# ---------------------------------------------------------------------------
 async def get_treatment_advice(disease: str) -> str:
-    """Ask Gemini for plant disease treatment advice."""
-    if not gemini_model:
+    """Ask Gemini for plant disease treatment advice tailored to house plants."""
+    if not gemini_text_model:
         return "Treatment advice unavailable — no Gemini API key configured."
 
     prompt = f"""You are a plant care expert specializing in house-grown, indoor, and small home garden plants.
@@ -129,7 +241,7 @@ Use this exact format:
 Keep the response under 200 words. Be practical, beginner-friendly, and specific to home growing conditions."""
 
     try:
-        response = await gemini_model.generate_content_async(prompt)
+        response = await gemini_text_model.generate_content_async(prompt)
         return response.text
     except Exception as e:
         logger.error(f"Gemini error: {e}")
@@ -153,25 +265,29 @@ async def read_upload_image(file: UploadFile) -> Image.Image:
 async def health():
     return {
         "status": "ok",
-        "model_loaded": model is not None,
-        "gemini_enabled": gemini_model is not None,
-        "num_classes": len(plant_classes),
+        "models": {
+            "vit_loaded": vit_model is not None,
+            "gemini_vision_enabled": gemini_vision_model is not None,
+            "gemini_text_enabled": gemini_text_model is not None,
+        },
+        "num_vit_classes": len(plant_classes),
+        "confidence_threshold": VIT_CONFIDENCE_THRESHOLD,
     }
 
 
 @app.post("/predict")
 async def predict(image: UploadFile = File(...)):
-    """Classify a plant leaf image. Returns disease + confidence."""
+    """Smart classification: ViT + Gemini Vision fallback."""
     img = await read_upload_image(image)
-    result = classify_image(img)
+    result = await smart_classify(img)
     return result
 
 
 @app.post("/analyze")
 async def analyze(image: UploadFile = File(...)):
-    """Classify + get LLM treatment advice."""
+    """Smart classification + LLM treatment advice."""
     img = await read_upload_image(image)
-    result = classify_image(img)
+    result = await smart_classify(img)
 
     # Skip treatment advice for healthy plants
     if "healthy" in result["disease"].lower():
