@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Streak - Plant Scope AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Streak Specific Styles overriding or complementing global styles */
+        .day-selector {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin: var(--space-xl) 0;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            /* For scrollbar if needed on small mobile */
+        }
+
+        .day-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1em;
+            position: relative;
+            background-color: rgba(255, 255, 255, 0.5);
+            color: var(--text-secondary);
+            border: 2px solid transparent;
+            cursor: default;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            flex-shrink: 0;
+        }
+
+        .day-button.today {
+            background-color: white;
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+        }
+
+        .day-button.completed {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .day-button.locked {
+            opacity: 0.5;
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .day-button .checkmark {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: white;
+            color: var(--primary);
+            border-radius: 50%;
+            font-size: 12px;
+            padding: 2px;
+            display: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .day-button.completed .checkmark {
+            display: block;
+        }
+
+        .day-button .preview-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none;
+            border: 2px solid var(--primary);
+            box-sizing: border-box;
+        }
+
+        .day-button.completed .preview-image {
+            display: block;
+        }
+
+        .day-button.completed span {
+            display: none;
+        }
+
+        /* Modal Enhancements */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 3000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 80vh;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: zoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="fade-in">
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container nav-content">
+            <div class="nav-logo">
+                <i class="fa-solid fa-leaf"></i> Plant Scope AI
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Dashboard</a>
+                <a href="monitoring.html" class="nav-link">Monitoring</a>
+                <a href="Streaks.html" class="nav-link active">Streaks</a>
+                <!-- Notification Bell -->
+                <button id="notif-bell-btn" class="notif-bell-btn" aria-label="Notifications">
+                    <i class="fa-regular fa-bell"></i>
+                    <span id="notif-badge" class="notif-badge hidden">0</span>
+                </button>
+                <a href="#" class="nav-link" id="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container" style="max-width: 700px; margin-top: var(--space-xl);">
+
+        <!-- Header -->
+        <header class="hero-section slide-up-stagger" style="padding: var(--space-lg) 0;">
+            <h1 class="display-title">Daily Progress</h1>
+            <p class="text-subtle">Build a habit. Upload a photo every day to maintain your streak.</p>
+            <div id="current-date" style="margin-top: var(--space-sm); font-weight: 600; color: var(--primary);"></div>
+        </header>
+
+        <!-- Streak Card -->
+        <div class="glass-panel slide-up-stagger" style="padding: var(--space-xl);">
+
+            <!-- Week Row -->
+            <div class="day-selector">
+                <div class="day-button" data-day="1" id="day-mon"><span>M</span><i
+                        class="fa-solid fa-check checkmark"></i><img class="preview-image"></div>
+                <div class="day-button" data-day="2" id="day-tue"><span>T</span><i
+                        class="fa-solid fa-check checkmark"></i><img class="preview-image"></div>
+                <div class="day-button" data-day="3" id="day-wed"><span>W</span><i
+                        class="fa-solid fa-check checkmark"></i><img class="preview-image"></div>
+                <div class="day-button" data-day="4" id="day-thu"><span>T</span><i
+                        class="fa-solid fa-check checkmark"></i><img class="preview-image"></div>
+                <div class="day-button" data-day="5" id="day-fri"><span>F</span><i
+                        class="fa-solid fa-check checkmark"></i><img class="preview-image"></div>
+                <div class="day-button" data-day="6" id="day-sat"><span>S</span><i
+                        class="fa-solid fa-check checkmark"></i><img class="preview-image"></div>
+                <div class="day-button" data-day="0" id="day-sun"><span>S</span><i
+                        class="fa-solid fa-check checkmark"></i><img class="preview-image"></div>
+            </div>
+
+            <!-- Upload Area -->
+            <div class="upload-area" id="upload-box"
+                style="border: 2px dashed rgba(0,0,0,0.1); border-radius: var(--radius-md); padding: var(--space-lg); text-align: center;">
+
+                <input type="file" id="image-upload" accept="image/*" style="display: none;">
+
+                <div id="upload-ui-content">
+                    <label for="image-upload" class="btn btn-primary" id="upload-label"
+                        style="cursor: pointer; width: 100%;">
+                        <i class="fa-solid fa-camera"></i> Upload Today's Photo
+                    </label>
+                    <p class="text-subtle" id="upload-status" style="margin-top: var(--space-md);">Ready to capture
+                        today's progress!</p>
+                </div>
+
+                <!-- Clear Button (Hidden by default) -->
+                <button class="btn btn-secondary" id="clear-proof-button"
+                    style="display: none; width: 100%; margin-top: var(--space-sm); color: var(--danger); background: rgba(255, 59, 48, 0.1);">
+                    <i class="fa-solid fa-trash"></i> Clear Proof
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Back Link -->
+        <div style="text-align: center; margin-top: var(--space-xl);">
+            <a href="index.html" class="btn btn-secondary" style="background: transparent;">
+                <i class="fa-solid fa-chevron-left"></i> Back to Dashboard
+            </a>
+        </div>
+
+    </main>
+
+    <!-- Modal for Image Preview -->
+    <div id="image-modal" class="modal">
+        <span class="modal-close"
+            style="position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer;">&times;</span>
+        <img class="modal-content" id="modal-image">
+        <div id="modal-caption"
+            style="position: absolute; bottom: 40px; color: white; text-align: center; width: 100%;"></div>
+    </div>
+
+    <!-- Notification Overlay & Panel -->
+    <div id="notif-overlay" class="notif-overlay"></div>
+    <div id="notif-panel" class="notif-panel" aria-hidden="true">
+        <div class="notif-header">
+            <div class="notif-header-top">
+                <div class="notif-header-title">Notifications</div>
+                <button id="notif-clear-btn" class="notif-clear-btn">Clear All</button>
+            </div>
+            <div class="notif-tabs">
+                <button class="notif-tab active" data-filter="all">All</button>
+                <button class="notif-tab" data-filter="alerts">Alerts</button>
+                <button class="notif-tab" data-filter="tips">Tips</button>
+            </div>
+        </div>
+        <div id="notif-list" class="notif-list">
+            <!-- Items injected by JS -->
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="notifications.js"></script>
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dayButtons = document.querySelectorAll('.day-button');
+            const uploadInput = document.getElementById('image-upload');
+            const uploadLabel = document.getElementById('upload-label');
+            const uploadStatus = document.getElementById('upload-status');
+            const clearButton = document.getElementById('clear-proof-button');
+            const currentDateElement = document.getElementById('current-date');
+
+            // Modal elements
+            const modal = document.getElementById('image-modal');
+            const modalImage = document.getElementById('modal-image');
+            const modalCaption = document.getElementById('modal-caption');
+            const modalClose = document.querySelector('.modal-close');
+
+            // 0. Setup
+            const today = new Date();
+            const todayDayIndex = today.getDay(); // 0 (Sun) to 6 (Sat)
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            currentDateElement.textContent = `${dayNames[todayDayIndex]}, ${today.toLocaleDateString()}`; // Keep user's local date format simpler
+
+            // Load data from Local Storage
+            let streakData = JSON.parse(localStorage.getItem('weeklyStreak')) || {};
+
+            function updateClearButtonVisibility(isCompleted) {
+                clearButton.style.display = isCompleted ? 'inline-flex' : 'none';
+                uploadLabel.style.display = isCompleted ? 'none' : 'inline-flex';
+            }
+
+            // 1. Initial State Check
+            function updateTrackerState() {
+                dayButtons.forEach(button => {
+                    const dayIndex = parseInt(button.getAttribute('data-day'));
+                    const dayName = dayNames[dayIndex];
+                    const previewImage = button.querySelector('.preview-image');
+                    const dataKey = `day-${dayIndex}`;
+
+                    button.classList.remove('locked', 'today', 'completed');
+
+                    const dayState = streakData[dataKey];
+
+                    // Previous Days
+                    if (dayIndex !== todayDayIndex) {
+                        button.classList.add('locked');
+                        if (dayState && dayState.completed) {
+                            button.classList.add('completed');
+                            previewImage.src = dayState.image || '';
+                        }
+                    }
+                    // Today
+                    else {
+                        button.classList.add('today');
+                        if (dayState && dayState.completed) {
+                            button.classList.add('completed');
+                            uploadStatus.textContent = `Completed! Keep it up.`;
+                            uploadStatus.style.color = 'var(--primary)';
+                            previewImage.src = dayState.image || '';
+                            updateClearButtonVisibility(true);
+                        } else {
+                            uploadStatus.textContent = `Ready to capture today's progress!`;
+                            uploadStatus.style.color = 'var(--text-secondary)';
+                            updateClearButtonVisibility(false);
+                        }
+                    }
+                });
+            }
+
+            // 2. Upload Handler
+            uploadInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onloadend = function () {
+                    const todayButton = document.querySelector(`.day-button[data-day="${todayDayIndex}"]`);
+                    const todayImagePreview = todayButton.querySelector('.preview-image');
+                    const dataKey = `day-${todayDayIndex}`;
+                    const base64Image = reader.result;
+
+                    // Update UI
+                    todayButton.classList.add('completed');
+                    todayImagePreview.src = base64Image;
+
+                    // Save Data
+                    streakData[dataKey] = {
+                        completed: true,
+                        image: base64Image
+                    };
+                    localStorage.setItem('weeklyStreak', JSON.stringify(streakData));
+
+                    // Update Text
+                    uploadStatus.textContent = `✅ Success! Streak maintained.`;
+                    uploadStatus.style.color = 'var(--primary)';
+                    updateClearButtonVisibility(true);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // 3. Clear Handler
+            clearButton.addEventListener('click', () => {
+                const todayButton = document.querySelector(`.day-button[data-day="${todayDayIndex}"]`);
+                const todayImagePreview = todayButton.querySelector('.preview-image');
+                const dayName = dayNames[todayDayIndex];
+                const dataKey = `day-${todayDayIndex}`;
+
+                if (confirm(`Remove proof for today (${dayName})?`)) {
+                    todayButton.classList.remove('completed');
+                    todayImagePreview.src = '';
+
+                    if (streakData[dataKey]) {
+                        delete streakData[dataKey];
+                    }
+                    localStorage.setItem('weeklyStreak', JSON.stringify(streakData));
+
+                    uploadStatus.textContent = `Proof removed. Upload a new photo!`;
+                    uploadStatus.style.color = 'var(--text-secondary)';
+                    updateClearButtonVisibility(false);
+                }
+            });
+
+            // 4. Modal Logic
+            dayButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    if (this.classList.contains('completed')) {
+                        const previewImage = this.querySelector('.preview-image');
+                        const dayIndex = parseInt(this.getAttribute('data-day'));
+
+                        if (previewImage.src) {
+                            modal.style.display = 'flex';
+                            modalImage.src = previewImage.src;
+                            modalCaption.textContent = `Streak proof for ${dayNames[dayIndex]}`;
+                        }
+                    }
+                });
+            });
+
+            modalClose.onclick = () => modal.style.display = 'none';
+            window.onclick = (e) => { if (e.target == modal) modal.style.display = 'none'; };
+
+            updateTrackerState();
+        });
+    </script>
+</body>
+
+</html>

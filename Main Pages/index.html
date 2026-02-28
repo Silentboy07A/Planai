@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Scope AI - Dashboard</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="chat.css">
+</head>
+
+<body class="fade-in">
+
+    <!-- Auth Guard: redirect to Login if not logged in -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const isLoggedIn = localStorage.getItem("isLoggedIn");
+            if (!isLoggedIn) {
+                window.location.replace("./Login.html");
+            }
+        });
+    </script>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container nav-content">
+            <div class="nav-logo">
+                <i class="fa-solid fa-leaf"></i> Plant Scope AI
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link active">Dashboard</a>
+                <a href="monitoring.html" class="nav-link">Monitoring</a>
+                <a href="Streaks.html" class="nav-link">Streaks</a>
+                <!-- Notification Bell -->
+                <button id="notif-bell-btn" class="notif-bell-btn" aria-label="Notifications">
+                    <i class="fa-regular fa-bell"></i>
+                    <span id="notif-badge" class="notif-badge hidden">0</span>
+                </button>
+                <a href="#" class="nav-link" id="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+
+        <!-- Hero Section -->
+        <header class="hero-section slide-up-stagger">
+            <h1 class="display-title">Welcome to your Dashboard</h1>
+            <p class="text-subtle">Monitor growth, analyze health, and grow smarter with AI.</p>
+        </header>
+
+        <!-- Featured Plant Image (Glass Panel) -->
+        <div class="glass-panel slide-up-stagger"
+            style="margin-bottom: var(--space-xl); padding: 0; overflow: hidden; height: 320px; position: relative;">
+            <img src="home_plant.jpg" alt="Featured Plant" style="width: 100%; height: 100%; object-fit: cover;">
+            <div
+                style="position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); color: white;">
+                <h3 style="margin: 0;">Plant of the Day</h3>
+                <span style="font-size: 0.9em; opacity: 0.9;">Keep it green and healthy.</span>
+            </div>
+        </div>
+
+        <!-- Level Selection Grid -->
+        <section class="slide-up-stagger">
+            <h2 class="section-title">Select Your Level</h2>
+            <div class="level-grid">
+                <!-- Novice Card -->
+                <a href="../Novice/Novice.html" class="glass-panel level-card level-novice"
+                    onclick="handleTransition(event, '../Novice/Novice.html')">
+                    <i class="fa-solid fa-seedling fa-3x" style="margin-bottom: 16px;"></i>
+                    <div class="level-title">Novice</div>
+                    <div class="level-desc">Just starting out? Learn the basics.</div>
+                </a>
+
+                <!-- Intermediate Card -->
+                <a href="../Intermediate/Intermediate.html" class="glass-panel level-card level-intermediate"
+                    onclick="handleTransition(event, '../Intermediate/Intermediate.html')">
+                    <i class="fa-solid fa-plant-wilt fa-3x" style="margin-bottom: 16px;"></i>
+                    <div class="level-title">Intermediate</div>
+                    <div class="level-desc">Expand your knowledge and skills.</div>
+                </a>
+
+                <!-- Expert Card -->
+                <a href="../Expert/Expert.html" class="glass-panel level-card level-expert"
+                    onclick="handleTransition(event, '../Expert/Expert.html')">
+                    <i class="fa-solid fa-tree fa-3x" style="margin-bottom: 16px;"></i>
+                    <div class="level-title">Expert</div>
+                    <div class="level-desc">Advanced techniques for master growers.</div>
+                </a>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Chatbot Toggle Button -->
+    <button class="chat-fab" id="chat-toggle-btn">
+        <i class="fa-solid fa-comment-dots fa-lg"></i>
+    </button>
+
+    <!-- Chat Window -->
+    <div class="chat-window" id="chat-window">
+        <!-- Header -->
+        <div class="chat-header">
+            <div style="font-weight: 600; font-size: 16px;">AI Assistant</div>
+            <button id="chat-close-btn"
+                style="background: none; border: none; cursor: pointer; color: var(--text-secondary);">
+                <i class="fa-solid fa-xmark fa-lg"></i>
+            </button>
+        </div>
+
+        <!-- Messages Area -->
+        <div class="chat-messages" id="chat-messages">
+            <!-- Bot Welcome Message -->
+            <div class="message-bubble msg-bot">
+                Hello! I'm your Plant AI Assistant. 🌱<br>Ask me anything about plant care, diseases, or fertilizers.
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input-area">
+            <input type="text" class="chat-input" id="chat-input" placeholder="Type a message...">
+            <button class="btn btn-primary" id="chat-send-btn"
+                style="border-radius: 50%; width: 40px; height: 40px; padding: 0;">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification Overlay & Panel -->
+    <div id="notif-overlay" class="notif-overlay"></div>
+    <div id="notif-panel" class="notif-panel" aria-hidden="true">
+        <div class="notif-header">
+            <div class="notif-header-top">
+                <div class="notif-header-title">Notifications</div>
+                <button id="notif-clear-btn" class="notif-clear-btn">Clear All</button>
+            </div>
+            <div class="notif-tabs">
+                <button class="notif-tab active" data-filter="all">All</button>
+                <button class="notif-tab" data-filter="alerts">Alerts</button>
+                <button class="notif-tab" data-filter="tips">Tips</button>
+            </div>
+        </div>
+        <div id="notif-list" class="notif-list">
+            <!-- Items injected by JS -->
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="script.js"></script>
+    <script src="notifications.js"></script>
+    <script src="chat.js"></script>
+</body>
+
+</html>

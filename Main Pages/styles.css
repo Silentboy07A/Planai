@@ -1,0 +1,1452 @@
+﻿/* =========================================
+   1. VARIABLES & THEME CONFIGURATION
+   ========================================= */
+:root {
+    /* --- COLOR PALETTE (iOS Inspired / Nature) --- */
+    /* Primary Colors */
+    --primary: #34C759;
+    /* iOS Green - Success/Growth */
+    --primary-dark: #248A3D;
+    --primary-light: #E8F5E9;
+
+    /* Secondary / Accents */
+    --accent: #5856D6;
+    /* iOS Indigo - Deep action */
+    --warning: #FF9500;
+    /* iOS Orange */
+    --danger: #FF3B30;
+    /* iOS Red */
+    --info: #007AFF;
+    /* iOS Blue */
+
+    /* Backgrounds */
+    --bg-body: #F2F2F7;
+    /* iOS Light Gray Background */
+    --bg-glass: rgba(255, 255, 255, 0.75);
+    --bg-glass-heavy: rgba(255, 255, 255, 0.9);
+    --bg-surface: #FFFFFF;
+
+    /* Text */
+    --text-primary: #000000;
+    --text-secondary: #8E8E93;
+    /* iOS Gray */
+    --text-tertiary: #C7C7CC;
+    --text-inverse: #FFFFFF;
+
+    /* --- TYPOGRAPHY --- */
+    --font-family-base: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-family-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    /* --- SPACING & SIZING --- */
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --radius-full: 9999px;
+
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-xxl: 48px;
+
+    /* --- SHADOWS & EFFECTS --- */
+    /* Soft Depth */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.12);
+
+    /* Glassmorphism Blur */
+    --blur-glass: blur(20px);
+}
+
+/* Dark Mode Support (Future verification needed) */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-body: #000000;
+        --bg-glass: rgba(28, 28, 30, 0.75);
+        --bg-glass-heavy: rgba(28, 28, 30, 0.9);
+        --bg-surface: #1C1C1E;
+
+        --text-primary: #FFFFFF;
+        --text-secondary: #8E8E93;
+        --text-tertiary: #48484A;
+    }
+}
+
+/* =========================================
+   2. GLOBAL RESET & BASE STYLES
+   ========================================= */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family-base);
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    padding-bottom: 80px;
+    /* Space for bottom content if needed */
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+}
+
+a:hover {
+    opacity: 0.7;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+/* =========================================
+   3. UTILITY COMPONENTS
+   ========================================= */
+
+/* Typography */
+.display-title {
+    font-family: var(--font-family-display);
+    font-weight: 700;
+    font-size: 34px;
+    letter-spacing: -0.02em;
+    margin-bottom: var(--space-sm);
+}
+
+.section-title {
+    font-family: var(--font-family-display);
+    font-weight: 600;
+    font-size: 22px;
+    margin-bottom: var(--space-md);
+    color: var(--text-primary);
+}
+
+.text-subtle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+/* Containers */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--space-md);
+}
+
+/* Glass Panel (Card) */
+.glass-panel {
+    background: var(--bg-glass);
+    backdrop-filter: var(--blur-glass);
+    -webkit-backdrop-filter: var(--blur-glass);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-lg);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-panel:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Buttons (iOS Style) */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s ease, opacity 0.2s ease;
+    gap: 8px;
+}
+
+.btn:active {
+    transform: scale(0.96);
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: var(--primary);
+}
+
+/* =========================================
+   4. LAYOUT COMPONENTS
+   ========================================= */
+
+/* Navigation (Glass Navbar) */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--bg-glass-heavy);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: var(--space-md) 0;
+}
+
+.nav-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.nav-logo {
+    font-weight: 700;
+    font-size: 20px;
+    background: linear-gradient(135deg, var(--primary), var(--info));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.nav-links {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.nav-link {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+}
+
+.nav-link.active,
+.nav-link:hover {
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.04);
+}
+
+/* Hero / Welcome Banner */
+.hero-section {
+    padding: var(--space-xl) 0;
+    text-align: center;
+}
+
+/* Level Grid */
+.level-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-lg);
+    margin: var(--space-xl) 0;
+}
+
+.level-card {
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    color: white;
+    /* Default text color for cards involving images/gradients */
+}
+
+/* Gradient backgrounds for levels */
+.level-novice {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.level-intermediate {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.level-expert {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.level-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: var(--space-xs);
+    z-index: 1;
+}
+
+.level-desc {
+    font-size: 15px;
+    opacity: 0.9;
+    z-index: 1;
+}
+
+/* =========================================
+   5. CHATBOT STYLES (Redesigned)
+   ========================================= */
+.chat-fab {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-full);
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-lg);
+    cursor: pointer;
+    z-index: 2000;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: none;
+}
+
+.chat-fab:hover {
+    transform: scale(1.1) rotate(-5deg);
+}
+
+.chat-fab img {
+    width: 32px;
+    height: 32px;
+    filter: brightness(0) invert(1);
+    /* Ensure white icon if using image */
+}
+
+.chat-window {
+    position: fixed;
+    bottom: 110px;
+    right: 32px;
+    width: 380px;
+    height: 600px;
+    max-height: 80vh;
+    background: var(--bg-glass-heavy);
+    backdrop-filter: blur(25px);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    display: none;
+    /* Toggled via JS */
+    flex-direction: column;
+    z-index: 2000;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.chat-header {
+    padding: var(--space-md);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.message-bubble {
+    padding: 10px 16px;
+    border-radius: 18px;
+    max-width: 80%;
+    font-size: 15px;
+    line-height: 1.4;
+    position: relative;
+    word-wrap: break-word;
+}
+
+.msg-bot {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-primary);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+.msg-user {
+    background: var(--primary);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-input-area {
+    padding: var(--space-md);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    gap: var(--space-sm);
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.chat-input {
+    flex: 1;
+    border: none;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 20px;
+    padding: 10px 16px;
+    font-size: 15px;
+    outline: none;
+    transition: background 0.2s;
+}
+
+.chat-input:focus {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.media-upload-area {
+    /* For future image upload styling */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    cursor: pointer;
+}
+
+/* =========================================
+   6. ANIMATIONS
+   ========================================= */
+.fade-in {
+    animation: fadeIn 0.6s ease forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.slide-up-stagger>* {
+    opacity: 0;
+    animation: slideUpFade 0.5s ease forwards;
+}
+
+.slide-up-stagger>*:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.slide-up-stagger>*:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.slide-up-stagger>*:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.slide-up-stagger>*:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =========================================
+   8. ENHANCED PLANT LAYOUT (Large Cards)
+   ========================================= */
+/* =========================================
+   9. LIST LAYOUT (iOS Style)
+   ========================================= */
+.plant-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    max-width: 800px;
+    margin: 0 auto;
+    /* Center the list */
+    padding-bottom: var(--space-xxl);
+}
+
+.plant-list-item {
+    display: flex;
+    align-items: center;
+    background: var(--bg-surface);
+    /* Usually white or light gray */
+    border-radius: var(--radius-md);
+    padding: 12px;
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.plant-list-item:hover {
+    transform: scale(1.01);
+    background: #fff;
+    box-shadow: var(--shadow-md);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.plant-list-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    object-fit: cover;
+    margin-right: var(--space-md);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.plant-list-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.plant-list-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.plant-list-sub {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.plant-list-arrow {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+    transition: color 0.2s, transform 0.2s;
+}
+
+.plant-list-item:hover .plant-list-arrow {
+    color: var(--primary);
+    transform: translateX(4px);
+}
+
+/* Dedicated Back Button */
+.back-btn-sticky {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--space-lg);
+    transition: all 0.2s;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* =========================================
+   10. MODERN GRID LAYOUT (Dashboard Style)
+   ========================================= */
+.plant-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-xl);
+    padding-bottom: var(--space-xxl);
+}
+
+.plant-card-modern {
+    background: white;
+    border-radius: 24px;
+    /* Matches dashboard radius */
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.plant-card-modern:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.plant-card-img-container {
+    height: 200px;
+    overflow: hidden;
+    position: relative;
+}
+
+.plant-card-modern img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.plant-card-modern:hover img {
+    transform: scale(1.1);
+}
+
+.plant-card-content {
+    padding: 24px;
+    text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+}
+
+.plant-card-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.plant-card-desc {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Back button tweaks for grid */
+.back-btn-float {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--text-primary);
+    font-weight: 600;
+    border-radius: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.back-btn-float:hover {
+    transform: translateX(-5px);
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.plant-card-feature {
+    position: relative;
+    height: 360px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    background: #000;
+    text-decoration: none;
+    display: block;
+}
+
+.plant-card-feature:hover {
+    transform: translateY(-8px) scale(1.01);
+    box-shadow: var(--shadow-lg);
+}
+
+.plant-card-feature img {
+    width: 100%;
+    height: 101%;
+    /* Prevent sub-pixel gap */
+    object-fit: cover;
+    opacity: 0.85;
+    transition: transform 0.6s ease, opacity 0.4s;
+}
+
+.plant-card-feature:hover img {
+    transform: scale(1.08);
+    opacity: 1;
+}
+
+.plant-feature-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    color: white;
+}
+
+.plant-feature-name {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    transform: translateY(10px);
+    transition: transform 0.4s ease;
+}
+
+.plant-feature-action {
+    font-size: 1rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+}
+
+.plant-card-feature:hover .plant-feature-name {
+    transform: translateY(0);
+}
+
+.plant-card-feature:hover .plant-feature-action {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.plant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-lg);
+    margin-top: var(--space-lg);
+    padding-bottom: var(--space-xl);
+}
+
+.plant-card {
+    display: block;
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    height: 280px;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: var(--bg-surface);
+}
+
+.plant-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+}
+
+.plant-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+}
+
+.plant-card:hover img {
+    transform: scale(1.08);
+}
+
+.plant-info-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 100%);
+    color: white;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+}
+
+.plant-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.plant-arrow {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(5px);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9em;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+}
+
+.plant-card:hover .plant-arrow {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* =========================================
+   11. UNIFORM LAYOUT (Refined)
+   ========================================= */
+
+.plant-grid-uniform {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    /* 3 Columns fixed as per screenshot suggestion or responsive behavior */
+    gap: var(--space-xl);
+    padding-bottom: var(--space-xxl);
+}
+
+@media (max-width: 900px) {
+    .plant-grid-uniform {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .plant-grid-uniform {
+        grid-template-columns: 1fr;
+    }
+}
+
+.plant-card-uniform {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Bouncy bump-out */
+}
+
+/* Title above Image */
+.plant-uniform-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #00AEEF;
+    /* Cyan/Blue color as visually estimated */
+    text-align: center;
+    margin-bottom: 12px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Image Box */
+.plant-uniform-img-box {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    /* Square or close to it */
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.plant-uniform-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Hover Effects */
+.plant-card-uniform:hover {
+    transform: scale(1.05);
+    z-index: 10;
+}
+
+.plant-card-uniform:hover .plant-uniform-img-box {
+    box-shadow: 0 0 25px rgba(0, 255, 255, 0.4), 0 0 10px rgba(0, 174, 239, 0.6);
+    border-color: rgba(0, 255, 255, 0.5);
+}
+
+/* =========================================
+   12. PLANT DETAIL PAGE STYLES
+   ========================================= */
+
+/* Content Card - The "One Box" */
+.plant-content-card {
+    background: var(--bg-surface);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 40px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    max-width: 900px;
+    margin: 20px auto 60px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Dark Mode support for card */
+@media (prefers-color-scheme: dark) {
+    .plant-content-card {
+        background: rgba(30, 30, 30, 0.85);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+    }
+}
+
+/* Enhanced Back Button */
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    z-index: 100;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.arrow-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--bg-surface);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* The SVG inside the circle */
+.arrow-circle svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--text-primary);
+    stroke-width: 2.5;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    z-index: 2;
+    transition: stroke 0.3s ease;
+}
+
+.back-label {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-primary);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    opacity: 0.8;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Hover Effects - "Glow up" and "Bump out" */
+.back-btn:hover {
+    transform: scale(1.1);
+}
+
+.back-btn:hover .arrow-circle {
+    box-shadow: 0 0 20px var(--primary), 0 0 10px var(--info);
+    background: white;
+}
+
+.back-btn:hover .arrow-circle svg {
+    stroke: var(--primary);
+}
+
+.back-btn:hover .back-label {
+    opacity: 1;
+    transform: translateX(4px);
+    color: var(--primary);
+}
+
+/* Active State (Click) */
+.back-btn:active {
+    transform: scale(0.95);
+}
+
+/* =========================================
+   13. NOTIFICATION PANEL (iOS-Inspired)
+   ========================================= */
+
+/* --- Bell Icon in Navbar --- */
+.notif-bell-btn {
+    position: relative;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: var(--text-secondary);
+    padding: 8px;
+    border-radius: var(--radius-full);
+    transition: color 0.2s ease, background 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notif-bell-btn:hover {
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.notif-bell-btn:active {
+    transform: scale(0.92);
+}
+
+.notif-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 18px;
+    height: 18px;
+    background: var(--danger);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    line-height: 1;
+    pointer-events: none;
+    box-shadow: 0 2px 6px rgba(255, 59, 48, 0.4);
+}
+
+.notif-badge.hidden {
+    display: none;
+}
+
+/* Bell bounce animation */
+@keyframes bellBounce {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    15% {
+        transform: rotate(14deg);
+    }
+
+    30% {
+        transform: rotate(-12deg);
+    }
+
+    45% {
+        transform: rotate(8deg);
+    }
+
+    60% {
+        transform: rotate(-6deg);
+    }
+
+    75% {
+        transform: rotate(3deg);
+    }
+}
+
+.notif-bell-btn.bounce .fa-bell {
+    animation: bellBounce 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* --- Overlay Backdrop --- */
+.notif-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 4999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.notif-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* --- Panel --- */
+.notif-panel {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: 380px;
+    max-width: calc(100vw - 24px);
+    z-index: 5000;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-glass-heavy);
+    backdrop-filter: blur(40px) saturate(1.8);
+    -webkit-backdrop-filter: blur(40px) saturate(1.8);
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.18),
+        0 0 0 0.5px rgba(255, 255, 255, 0.1) inset;
+    transform: translateX(110%);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+        opacity 0.35s ease;
+    overflow: hidden;
+}
+
+.notif-panel.open {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* --- Panel Header --- */
+.notif-header {
+    padding: 20px 20px 0;
+    flex-shrink: 0;
+}
+
+.notif-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.notif-header-title {
+    font-family: var(--font-family-display);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.notif-clear-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--primary);
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.notif-clear-btn:hover {
+    background: rgba(52, 199, 89, 0.1);
+}
+
+.notif-clear-btn:active {
+    opacity: 0.7;
+}
+
+/* Filter tabs */
+.notif-tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(118, 118, 128, 0.12);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    margin-bottom: 8px;
+}
+
+.notif-tab {
+    flex: 1;
+    padding: 7px 12px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: center;
+}
+
+.notif-tab.active {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.notif-tab:hover:not(.active) {
+    color: var(--text-primary);
+}
+
+/* --- Notification List --- */
+.notif-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px 20px;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Thin scrollbar */
+.notif-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.notif-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.notif-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+}
+
+/* --- Notification Card --- */
+.notif-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition:
+        transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+    position: relative;
+}
+
+.notif-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.75);
+}
+
+.notif-card:active {
+    transform: scale(0.97);
+    box-shadow: none;
+}
+
+.notif-card.read {
+    opacity: 0.55;
+}
+
+/* Unread dot */
+.notif-unread-dot {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 6px rgba(52, 199, 89, 0.5);
+}
+
+.notif-card.read .notif-unread-dot {
+    display: none;
+}
+
+/* Icon */
+.notif-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.notif-icon.alert {
+    background: rgba(255, 149, 0, 0.15);
+    color: var(--warning);
+}
+
+.notif-icon.success {
+    background: rgba(52, 199, 89, 0.15);
+    color: var(--primary);
+}
+
+.notif-icon.reminder {
+    background: rgba(0, 122, 255, 0.15);
+    color: var(--info);
+}
+
+.notif-icon.tip {
+    background: rgba(88, 86, 214, 0.15);
+    color: var(--accent);
+}
+
+/* Text content */
+.notif-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notif-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+    line-height: 1.3;
+}
+
+.notif-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.notif-time {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+/* New notification pulse */
+.notif-card.new-pulse {
+    animation: notifPulse 2s ease-in-out 1;
+}
+
+@keyframes notifPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(52, 199, 89, 0);
+    }
+
+    50% {
+        box-shadow: 0 0 0 6px rgba(52, 199, 89, 0.15);
+    }
+}
+
+/* --- Empty State --- */
+.notif-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.notif-empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+}
+
+.notif-empty-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.notif-empty-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* --- Accessibility --- */
+.notif-bell-btn:focus-visible,
+.notif-tab:focus-visible,
+.notif-card:focus-visible,
+.notif-clear-btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* --- Reduced Motion --- */
+@media (prefers-reduced-motion: reduce) {
+
+    .notif-panel,
+    .notif-overlay,
+    .notif-card,
+    .notif-bell-btn.bounce .fa-bell {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+
+/* --- Dark Mode support for notifications --- */
+@media (prefers-color-scheme: dark) {
+    .notif-card {
+        background: rgba(44, 44, 46, 0.6);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .notif-card:hover {
+        background: rgba(44, 44, 46, 0.85);
+    }
+
+    .notif-tabs {
+        background: rgba(118, 118, 128, 0.24);
+    }
+
+    .notif-tab.active {
+        background: rgba(58, 58, 60, 1);
+    }
+
+    .notif-overlay {
+        background: rgba(0, 0, 0, 0.45);
+    }
+}
+
+/* --- Responsive (Mobile fullscreen panel) --- */
+@media (max-width: 480px) {
+    .notif-panel {
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        max-width: 100%;
+        border-radius: 0;
+    }
+}

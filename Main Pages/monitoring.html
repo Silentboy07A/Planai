@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Disease Detector - Plant Scope AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="fade-in">
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container nav-content">
+            <div class="nav-logo">
+                <i class="fa-solid fa-leaf"></i> Plant Scope AI
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Dashboard</a>
+                <a href="monitoring.html" class="nav-link active">Monitoring</a>
+                <a href="Streaks.html" class="nav-link">Streaks</a>
+                <!-- Notification Bell -->
+                <button id="notif-bell-btn" class="notif-bell-btn" aria-label="Notifications">
+                    <i class="fa-regular fa-bell"></i>
+                    <span id="notif-badge" class="notif-badge hidden">0</span>
+                </button>
+                <a href="#" class="nav-link" id="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container" style="max-width: 800px; margin-top: var(--space-xl);">
+
+        <!-- Header -->
+        <header class="hero-section slide-up-stagger" style="padding: var(--space-lg) 0;">
+            <h1 class="display-title">Plant Health Diagnostics</h1>
+            <p class="text-subtle">Upload a clear photo of your plant leaf to detect potential diseases.</p>
+        </header>
+
+        <!-- Upload & Analysis Card -->
+        <div class="glass-panel slide-up-stagger" style="text-align: center;">
+
+            <!-- Upload Area -->
+            <div class="upload-area" id="upload-box"
+                style="border: 2px dashed rgba(0,0,0,0.1); border-radius: var(--radius-md); padding: var(--space-xl); cursor: pointer; transition: background 0.2s;">
+                <input type="file" id="file-input" accept="image/*" style="display: none;">
+                <div id="upload-label" style="color: var(--primary);">
+                    <i class="fa-solid fa-cloud-arrow-up fa-3x"
+                        style="margin-bottom: var(--space-md); color: var(--text-secondary);"></i>
+                    <h3 style="margin-bottom: 4px; color: var(--text-primary);">Tap to Upload</h3>
+                    <p class="text-subtle">or drag and drop here</p>
+                </div>
+                <!-- Image Preview -->
+                <img id="image-preview" src="#" alt="Preview"
+                    style="display: none; max-width: 100%; max-height: 300px; margin: 0 auto; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+            </div>
+
+            <!-- Controls -->
+            <div class="control-buttons"
+                style="margin-top: var(--space-lg); display: flex; gap: var(--space-md); justify-content: center;">
+                <button id="predict-button" class="btn btn-primary" style="display: none; width: 100%;">
+                    <i class="fa-solid fa-microscope"></i> Analyze Disease
+                </button>
+                <button id="clear-button" class="btn btn-secondary" style="display: none;">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+
+            <!-- Results -->
+            <div id="result-area"
+                style="display: none; margin-top: var(--space-lg); padding: var(--space-md); background: var(--bg-surface); border-radius: var(--radius-md); text-align: left; border-left: 4px solid var(--primary);">
+                <div
+                    style="font-size: 14px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 1px; font-weight: 600;">
+                    Prediction Result</div>
+                <div id="prediction-text"
+                    style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 4px 0;"></div>
+                <div id="confidence-text" style="color: var(--primary); font-weight: 600;"></div>
+            </div>
+
+        </div>
+
+        <!-- Back Link -->
+        <div style="text-align: center; margin-top: var(--space-xl);">
+            <a href="index.html" class="btn btn-secondary" style="background: transparent;">
+                <i class="fa-solid fa-chevron-left"></i> Back to Dashboard
+            </a>
+        </div>
+
+    </main>
+
+    <!-- Notification Overlay & Panel -->
+    <div id="notif-overlay" class="notif-overlay"></div>
+    <div id="notif-panel" class="notif-panel" aria-hidden="true">
+        <div class="notif-header">
+            <div class="notif-header-top">
+                <div class="notif-header-title">Notifications</div>
+                <button id="notif-clear-btn" class="notif-clear-btn">Clear All</button>
+            </div>
+            <div class="notif-tabs">
+                <button class="notif-tab active" data-filter="all">All</button>
+                <button class="notif-tab" data-filter="alerts">Alerts</button>
+                <button class="notif-tab" data-filter="tips">Tips</button>
+            </div>
+        </div>
+        <div id="notif-list" class="notif-list">
+            <!-- Items injected by JS -->
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        // Auth Protection & Logout
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth(); // Redirect if not logged in
+
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    handleLogout();
+                });
+            }
+        });
+    </script>
+    <script src="notifications.js"></script>
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const uploadBox = document.getElementById('upload-box');
+            const fileInput = document.getElementById('file-input');
+            const imagePreview = document.getElementById('image-preview');
+            const uploadLabel = document.getElementById('upload-label');
+            const predictButton = document.getElementById('predict-button');
+            const clearButton = document.getElementById('clear-button');
+            const resultArea = document.getElementById('result-area');
+            const predictionText = document.getElementById('prediction-text');
+            const confidenceText = document.getElementById('confidence-text');
+
+            let uploadedFile = null;
+
+            // Trigger file input on box click
+            uploadBox.addEventListener('click', () => {
+                if (!uploadedFile) fileInput.click();
+            });
+
+            // Handle File Selection
+            fileInput.addEventListener('change', function (event) {
+                handleFile(event.target.files[0]);
+            });
+
+            // Drag and Drop
+            uploadBox.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadBox.style.background = 'rgba(0,0,0,0.02)';
+            });
+            uploadBox.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadBox.style.background = 'transparent';
+            });
+            uploadBox.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadBox.style.background = 'transparent';
+                handleFile(e.dataTransfer.files[0]);
+            });
+
+            function handleFile(file) {
+                uploadedFile = file;
+                if (uploadedFile) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        uploadLabel.style.display = 'none';
+                        predictButton.style.display = 'inline-flex';
+                        clearButton.style.display = 'inline-flex';
+                        uploadBox.style.borderStyle = 'solid';
+                        resultArea.style.display = 'none';
+                    };
+                    reader.readAsDataURL(uploadedFile);
+                }
+            }
+
+            // Clear
+            clearButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent box click
+                resetInterface();
+            });
+
+            function resetInterface() {
+                imagePreview.src = '#';
+                imagePreview.style.display = 'none';
+                uploadLabel.style.display = 'block';
+                predictButton.style.display = 'none';
+                clearButton.style.display = 'none';
+                uploadBox.style.borderStyle = 'dashed';
+                resultArea.style.display = 'none';
+                fileInput.value = '';
+                uploadedFile = null;
+            }
+
+            // Prediction Simulation
+            predictButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!uploadedFile) return;
+
+                const originalText = predictButton.innerHTML;
+                predictButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyzing...';
+                predictButton.disabled = true;
+                clearButton.disabled = true;
+
+                setTimeout(() => {
+                    const results = [
+                        { disease: 'Healthy Leaf', confidence: '98.5% Confidence' },
+                        { disease: 'Tomato Late Blight', confidence: '92.1% Confidence' },
+                        { disease: 'Potato Early Blight', confidence: '85.9% Confidence' }
+                    ];
+
+                    const randomIndex = Math.floor(Math.random() * results.length);
+                    const simulatedResult = results[randomIndex];
+
+                    predictionText.textContent = simulatedResult.disease;
+                    confidenceText.textContent = simulatedResult.confidence;
+                    resultArea.style.display = 'block';
+
+                    // Reset Button
+                    predictButton.innerHTML = originalText;
+                    predictButton.disabled = false;
+                    clearButton.disabled = false;
+
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+
+</html>

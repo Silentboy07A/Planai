@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Plant Scope AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            background-color: #fff;
+            overflow: hidden;
+        }
+
+        /* --- LEFT SIDE: Image & Branding --- */
+        .login-left {
+            flex: 1.2;
+            position: relative;
+            background-image: url('home_plant.jpg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px;
+            color: white;
+            overflow: hidden;
+        }
+
+        /* Dark Overlay */
+        .login-left::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(5, 30, 20, 0.9), rgba(20, 60, 40, 0.7));
+            z-index: 1;
+        }
+
+        .login-content {
+            position: relative;
+            z-index: 2;
+            max-width: 500px;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: #34C759;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-text {
+            font-size: 1.1rem;
+            opacity: 0.85;
+            line-height: 1.6;
+        }
+
+        /* --- RIGHT SIDE: Form --- */
+        .login-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            background: #fff;
+            position: relative;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .auth-header {
+            margin-bottom: 2rem;
+        }
+
+        .auth-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1c1c1e;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-header p {
+            color: #8E8E93;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #1c1c1e;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #F2F2F7;
+            background: #F9F9FB;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: #34C759;
+            background: #fff;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background-color: #34C759;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-primary:hover {
+            background-color: #2eb14f;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 2rem 0;
+            color: #8E8E93;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #E5E5EA;
+        }
+
+        .divider::before {
+            margin-right: .5em;
+        }
+
+        .divider::after {
+            margin-left: .5em;
+        }
+
+        /* Social Login */
+        .btn-google {
+            width: 100%;
+            padding: 12px;
+            background: white;
+            border: 2px solid #E5E5EA;
+            border-radius: 12px;
+            color: #1c1c1e;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-google:hover {
+            background: #F9F9FB;
+            border-color: #D1D1D6;
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.95rem;
+            color: #8E8E93;
+        }
+
+        .signup-link a {
+            color: #34C759;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .login-left {
+                display: none;
+            }
+        }
+    </style>
+
+    <!-- Supabase JS v2 from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+    <!-- LEFT SIDE: Branding -->
+    <div class="login-left">
+        <div class="login-content">
+            <div class="brand-logo">
+                <i class="fa-solid fa-leaf"></i> Plant Scope AI
+            </div>
+            <h1 class="hero-title">Smart Care<br>for Your Plants.</h1>
+            <p class="hero-text">Identify diseases, track growth streaks, and get expert AI botanical advice instantly.
+            </p>
+        </div>
+    </div>
+
+    <!-- RIGHT SIDE: Login Form -->
+    <div class="login-right">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h2>Welcome Back</h2>
+                <p>Please enter your details to sign in.</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Username / Email</label>
+                    <input type="email" id="email" required placeholder="gardener@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn-primary">Sign In</button>
+            </form>
+
+            <div class="divider">OR CONTINUE WITH</div>
+
+            <button class="btn-google">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="20">
+                Sign in with Google
+            </button>
+
+            <div class="signup-link">
+                Don't have an account? <a href="signup.html">Sign up free</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Initialization Scripts -->
+    <script src="supabase.js"></script>
+    <script src="auth.js"></script>
+
+    <script>
+        // Check if user is already logged in
+        document.addEventListener('DOMContentLoaded', async () => {
+            // If already logged in via localStorage, redirect immediately
+            const isLoggedIn = localStorage.getItem("isLoggedIn");
+            if (isLoggedIn) {
+                window.location.replace("./index.html");
+                return;
+            }
+            // Also check Supabase session
+            if (typeof checkAuth === 'function') {
+                await checkAuth();
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            await handleLogin(email, password);
+        });
+    </script>
+</body>
+
+</html>
