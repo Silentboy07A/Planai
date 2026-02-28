@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # ---------- Node.js Web + API ----------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongo:27017/plantscope
+      - ML_SERVICE_URL=http://ml-service:8000
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET:-plantscope-dev-secret}
+      - OLLAMA_URL=http://host.docker.internal:11434/api/chat
+    depends_on:
+      mongo:
+        condition: service_started
+      ml-service:
+        condition: service_started
+    restart: unless-stopped
+
+  # ---------- Python ML Service ----------
+  ml-service:
+    build:
+      context: ./ml_service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    restart: unless-stopped
+
+  # ---------- MongoDB (dev only) ----------
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo_data:

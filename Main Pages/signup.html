@@ -111,21 +111,34 @@
         </div>
     </div>
 
-    <!-- Initialization Scripts -->
-    <script src="supabase.js"></script>
-    <script src="auth.js"></script>
+    <!-- Auth Scripts (JWT-based) -->
+    <script src="api.js"></script>
 
     <script>
-        // Check if user is already logged in
-        document.addEventListener('DOMContentLoaded', checkAuth);
+        // Redirect if already logged in
+        document.addEventListener('DOMContentLoaded', () => {
+            redirectIfLoggedIn();
+        });
 
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
             const username = document.getElementById('username').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            await handleSignup(username, email, password);
+            btn.textContent = 'Creating account...';
+            btn.disabled = true;
+
+            try {
+                await apiSignup(username, email, password);
+                alert('Account created successfully!');
+                window.location.replace('./index.html');
+            } catch (err) {
+                alert('Signup Error: ' + err.message);
+                btn.textContent = 'Sign Up';
+                btn.disabled = false;
+            }
         });
     </script>
 </body>

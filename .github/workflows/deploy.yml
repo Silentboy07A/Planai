@@ -1,0 +1,78 @@
+name: Deploy to Azure Container Apps
+
+on:
+  push:
+    branches: [master, main]
+
+env:
+  ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+  RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+  CONTAINER_APP_ENV: ${{ secrets.AZURE_CONTAINER_APP_ENV }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Login to Azure
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # 3. Login to Azure Container Registry
+      - name: Login to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      # 4. Build & Push Web Image
+      - name: Build and push web image
+        run: |
+          docker build -t $ACR_LOGIN_SERVER/plantscope-web:${{ github.sha }} .
+          docker push $ACR_LOGIN_SERVER/plantscope-web:${{ github.sha }}
+          docker tag $ACR_LOGIN_SERVER/plantscope-web:${{ github.sha }} $ACR_LOGIN_SERVER/plantscope-web:latest
+          docker push $ACR_LOGIN_SERVER/plantscope-web:latest
+
+      # 5. Build & Push ML Service Image
+      - name: Build and push ML service image
+        run: |
+          docker build -t $ACR_LOGIN_SERVER/plantscope-ml:${{ github.sha }} -f ml_service/Dockerfile ml_service/
+          docker push $ACR_LOGIN_SERVER/plantscope-ml:${{ github.sha }}
+          docker tag $ACR_LOGIN_SERVER/plantscope-ml:${{ github.sha }} $ACR_LOGIN_SERVER/plantscope-ml:latest
+          docker push $ACR_LOGIN_SERVER/plantscope-ml:latest
+
+      # 6. Deploy ML Service to Azure Container Apps
+      - name: Deploy ML Service
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppName: plantscope-ml
+          containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
+          imageToDeploy: ${{ env.ACR_LOGIN_SERVER }}/plantscope-ml:${{ github.sha }}
+          targetPort: 8000
+          ingress: internal
+          environmentVariables: >-
+            GEMINI_API_KEY=secretref:gemini-api-key
+
+      # 7. Deploy Web Service to Azure Container Apps
+      - name: Deploy Web App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppName: plantscope-web
+          containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
+          imageToDeploy: ${{ env.ACR_LOGIN_SERVER }}/plantscope-web:${{ github.sha }}
+          targetPort: 3000
+          ingress: external
+          environmentVariables: >-
+            MONGODB_URI=secretref:mongodb-uri
+            JWT_SECRET=secretref:jwt-secret
+            GEMINI_API_KEY=secretref:gemini-api-key
+            ML_SERVICE_URL=http://plantscope-ml

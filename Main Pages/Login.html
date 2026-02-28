@@ -270,15 +270,8 @@
                     <label for="password">Password</label>
                     <input type="password" id="password" required placeholder="••••••••">
                 </div>
-                <button type="submit" class="btn-primary">Sign In</button>
+                <button type="submit" class="btn-primary" id="login-btn">Sign In</button>
             </form>
-
-            <div class="divider">OR CONTINUE WITH</div>
-
-            <button class="btn-google">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="20">
-                Sign in with Google
-            </button>
 
             <div class="signup-link">
                 Don't have an account? <a href="signup.html">Sign up free</a>
@@ -286,31 +279,32 @@
         </div>
     </div>
 
-    <!-- Initialization Scripts -->
-    <script src="supabase.js"></script>
-    <script src="auth.js"></script>
+    <!-- Auth Scripts (JWT-based) -->
+    <script src="api.js"></script>
 
     <script>
-        // Check if user is already logged in
-        document.addEventListener('DOMContentLoaded', async () => {
-            // If already logged in via localStorage, redirect immediately
-            const isLoggedIn = localStorage.getItem("isLoggedIn");
-            if (isLoggedIn) {
-                window.location.replace("./index.html");
-                return;
-            }
-            // Also check Supabase session
-            if (typeof checkAuth === 'function') {
-                await checkAuth();
-            }
+        document.addEventListener('DOMContentLoaded', () => {
+            // If already logged in, redirect to dashboard
+            redirectIfLoggedIn();
         });
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = document.getElementById('login-btn');
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            await handleLogin(email, password);
+            btn.textContent = 'Signing in...';
+            btn.disabled = true;
+
+            try {
+                await apiLogin(email, password);
+                window.location.replace('./index.html');
+            } catch (err) {
+                alert('Login Failed: ' + err.message);
+                btn.textContent = 'Sign In';
+                btn.disabled = false;
+            }
         });
     </script>
 </body>

@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration ---
-    const API_URL = 'http://localhost:3000/api/chat';
+    const API_URL = '/api/chat';
 
     // --- DOM Elements ---
     const chatToggleBtn = document.getElementById('chat-toggle-btn');

@@ -246,12 +246,26 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase.js"></script>
+    <script src="api.js"></script>
     <script src="notifications.js"></script>
     <script src="script.js"></script>
+
     <script>
+        // Auth & Logout
         document.addEventListener('DOMContentLoaded', () => {
+            requireAuth();
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    apiLogout();
+                });
+            }
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
             const dayButtons = document.querySelectorAll('.day-button');
             const uploadInput = document.getElementById('image-upload');
             const uploadLabel = document.getElementById('upload-label');
@@ -265,48 +279,58 @@
             const modalCaption = document.getElementById('modal-caption');
             const modalClose = document.querySelector('.modal-close');
 
-            // 0. Setup
+            // Setup
             const today = new Date();
-            const todayDayIndex = today.getDay(); // 0 (Sun) to 6 (Sat)
+            const todayDayIndex = today.getDay();
             const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            currentDateElement.textContent = `${dayNames[todayDayIndex]}, ${today.toLocaleDateString()}`; // Keep user's local date format simpler
+            currentDateElement.textContent = `${dayNames[todayDayIndex]}, ${today.toLocaleDateString()}`;
 
-            // Load data from Local Storage
-            let streakData = JSON.parse(localStorage.getItem('weeklyStreak')) || {};
+            // Load streak data from MongoDB
+            let streakDays = [];
+
+            async function loadStreak() {
+                try {
+                    const res = await apiFetch('/api/streaks');
+                    if (res && res.ok) {
+                        const data = await res.json();
+                        streakDays = data.days || [];
+                    }
+                } catch (err) {
+                    console.error('Failed to load streak:', err);
+                }
+            }
+
+            function getDayData(dayIndex) {
+                return streakDays.find(d => d.dayIndex === dayIndex);
+            }
 
             function updateClearButtonVisibility(isCompleted) {
                 clearButton.style.display = isCompleted ? 'inline-flex' : 'none';
                 uploadLabel.style.display = isCompleted ? 'none' : 'inline-flex';
             }
 
-            // 1. Initial State Check
             function updateTrackerState() {
                 dayButtons.forEach(button => {
                     const dayIndex = parseInt(button.getAttribute('data-day'));
-                    const dayName = dayNames[dayIndex];
                     const previewImage = button.querySelector('.preview-image');
-                    const dataKey = `day-${dayIndex}`;
 
                     button.classList.remove('locked', 'today', 'completed');
 
-                    const dayState = streakData[dataKey];
+                    const dayData = getDayData(dayIndex);
 
-                    // Previous Days
                     if (dayIndex !== todayDayIndex) {
                         button.classList.add('locked');
-                        if (dayState && dayState.completed) {
+                        if (dayData && dayData.completed) {
                             button.classList.add('completed');
-                            previewImage.src = dayState.image || '';
+                            previewImage.src = dayData.imageData || '';
                         }
-                    }
-                    // Today
-                    else {
+                    } else {
                         button.classList.add('today');
-                        if (dayState && dayState.completed) {
+                        if (dayData && dayData.completed) {
                             button.classList.add('completed');
                             uploadStatus.textContent = `Completed! Keep it up.`;
                             uploadStatus.style.color = 'var(--primary)';
-                            previewImage.src = dayState.image || '';
+                            previewImage.src = dayData.imageData || '';
                             updateClearButtonVisibility(true);
                         } else {
                             uploadStatus.textContent = `Ready to capture today's progress!`;
@@ -317,52 +341,65 @@
                 });
             }
 
-            // 2. Upload Handler
-            uploadInput.addEventListener('change', (event) => {
+            // Upload Handler — saves to MongoDB
+            uploadInput.addEventListener('change', async (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
 
                 const reader = new FileReader();
-                reader.onloadend = function () {
+                reader.onloadend = async function () {
+                    const base64Image = reader.result;
                     const todayButton = document.querySelector(`.day-button[data-day="${todayDayIndex}"]`);
                     const todayImagePreview = todayButton.querySelector('.preview-image');
-                    const dataKey = `day-${todayDayIndex}`;
-                    const base64Image = reader.result;
 
-                    // Update UI
+                    // Optimistic UI update
                     todayButton.classList.add('completed');
                     todayImagePreview.src = base64Image;
-
-                    // Save Data
-                    streakData[dataKey] = {
-                        completed: true,
-                        image: base64Image
-                    };
-                    localStorage.setItem('weeklyStreak', JSON.stringify(streakData));
-
-                    // Update Text
-                    uploadStatus.textContent = `✅ Success! Streak maintained.`;
+                    uploadStatus.textContent = `✅ Saving...`;
                     uploadStatus.style.color = 'var(--primary)';
                     updateClearButtonVisibility(true);
+
+                    // Save to MongoDB
+                    try {
+                        const res = await apiFetch('/api/streaks', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                dayIndex: todayDayIndex,
+                                imageData: base64Image
+                            }),
+                        });
+
+                        if (res && res.ok) {
+                            const data = await res.json();
+                            streakDays = data.days || [];
+                            uploadStatus.textContent = `✅ Success! Streak maintained.`;
+                        } else {
+                            uploadStatus.textContent = `⚠️ Saved locally. Server sync failed.`;
+                        }
+                    } catch (err) {
+                        console.error('Failed to save streak:', err);
+                        uploadStatus.textContent = `⚠️ Saved locally. Server sync failed.`;
+                    }
                 };
                 reader.readAsDataURL(file);
             });
 
-            // 3. Clear Handler
-            clearButton.addEventListener('click', () => {
+            // Clear Handler
+            clearButton.addEventListener('click', async () => {
                 const todayButton = document.querySelector(`.day-button[data-day="${todayDayIndex}"]`);
                 const todayImagePreview = todayButton.querySelector('.preview-image');
                 const dayName = dayNames[todayDayIndex];
-                const dataKey = `day-${todayDayIndex}`;
 
                 if (confirm(`Remove proof for today (${dayName})?`)) {
                     todayButton.classList.remove('completed');
                     todayImagePreview.src = '';
 
-                    if (streakData[dataKey]) {
-                        delete streakData[dataKey];
+                    try {
+                        await apiFetch(`/api/streaks/${todayDayIndex}`, { method: 'DELETE' });
+                        streakDays = streakDays.filter(d => d.dayIndex !== todayDayIndex);
+                    } catch (err) {
+                        console.error('Failed to delete streak entry:', err);
                     }
-                    localStorage.setItem('weeklyStreak', JSON.stringify(streakData));
 
                     uploadStatus.textContent = `Proof removed. Upload a new photo!`;
                     uploadStatus.style.color = 'var(--text-secondary)';
@@ -370,7 +407,7 @@
                 }
             });
 
-            // 4. Modal Logic
+            // Modal Logic
             dayButtons.forEach(button => {
                 button.addEventListener('click', function () {
                     if (this.classList.contains('completed')) {
@@ -389,6 +426,8 @@
             modalClose.onclick = () => modal.style.display = 'none';
             window.onclick = (e) => { if (e.target == modal) modal.style.display = 'none'; };
 
+            // Initial load
+            await loadStreak();
             updateTrackerState();
         });
     </script>

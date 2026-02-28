@@ -110,25 +110,25 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase.js"></script>
-    <script src="auth.js"></script>
+    <script src="api.js"></script>
+    <script src="notifications.js"></script>
+    <script src="script.js"></script>
+
     <script>
         // Auth Protection & Logout
         document.addEventListener('DOMContentLoaded', () => {
-            checkAuth(); // Redirect if not logged in
+            requireAuth();
 
             const logoutBtn = document.getElementById('logout-btn');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    handleLogout();
+                    apiLogout();
                 });
             }
         });
     </script>
-    <script src="notifications.js"></script>
-    <script src="script.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const uploadBox = document.getElementById('upload-box');
@@ -142,6 +142,7 @@
             const confidenceText = document.getElementById('confidence-text');
 
             let uploadedFile = null;
+            let imageBase64 = null;
 
             // Trigger file input on box click
             uploadBox.addEventListener('click', () => {
@@ -173,13 +174,17 @@
                 if (uploadedFile) {
                     const reader = new FileReader();
                     reader.onload = function (e) {
-                        imagePreview.src = e.target.result;
+                        imageBase64 = e.target.result;
+                        imagePreview.src = imageBase64;
                         imagePreview.style.display = 'block';
                         uploadLabel.style.display = 'none';
                         predictButton.style.display = 'inline-flex';
                         clearButton.style.display = 'inline-flex';
                         uploadBox.style.borderStyle = 'solid';
                         resultArea.style.display = 'none';
+                        // Hide treatment area if it exists
+                        const treatmentArea = document.getElementById('treatment-area');
+                        if (treatmentArea) treatmentArea.style.display = 'none';
                     };
                     reader.readAsDataURL(uploadedFile);
                 }
@@ -187,7 +192,7 @@
 
             // Clear
             clearButton.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent box click
+                e.stopPropagation();
                 resetInterface();
             });
 
@@ -201,38 +206,70 @@
                 resultArea.style.display = 'none';
                 fileInput.value = '';
                 uploadedFile = null;
+                imageBase64 = null;
+                const treatmentArea = document.getElementById('treatment-area');
+                if (treatmentArea) treatmentArea.style.display = 'none';
             }
 
-            // Prediction Simulation
-            predictButton.addEventListener('click', (e) => {
+            // Real AI Prediction via ML Service
+            predictButton.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                if (!uploadedFile) return;
+                if (!uploadedFile || !imageBase64) return;
 
                 const originalText = predictButton.innerHTML;
                 predictButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyzing...';
                 predictButton.disabled = true;
                 clearButton.disabled = true;
 
-                setTimeout(() => {
-                    const results = [
-                        { disease: 'Healthy Leaf', confidence: '98.5% Confidence' },
-                        { disease: 'Tomato Late Blight', confidence: '92.1% Confidence' },
-                        { disease: 'Potato Early Blight', confidence: '85.9% Confidence' }
-                    ];
+                try {
+                    const response = await apiFetch('/api/analyze', {
+                        method: 'POST',
+                        body: JSON.stringify({ imageData: imageBase64 }),
+                    });
 
-                    const randomIndex = Math.floor(Math.random() * results.length);
-                    const simulatedResult = results[randomIndex];
+                    if (!response || !response.ok) {
+                        const errData = response ? await response.json() : {};
+                        throw new Error(errData.error || 'Analysis failed');
+                    }
 
-                    predictionText.textContent = simulatedResult.disease;
-                    confidenceText.textContent = simulatedResult.confidence;
+                    const result = await response.json();
+
+                    // Show prediction result
+                    predictionText.textContent = result.disease;
+                    confidenceText.textContent = `${result.confidence}% Confidence`;
                     resultArea.style.display = 'block';
 
-                    // Reset Button
+                    // Show treatment advice
+                    let treatmentArea = document.getElementById('treatment-area');
+                    if (!treatmentArea) {
+                        treatmentArea = document.createElement('div');
+                        treatmentArea.id = 'treatment-area';
+                        treatmentArea.style.cssText = 'margin-top: var(--space-md); padding: var(--space-md); background: var(--bg-surface); border-radius: var(--radius-md); text-align: left; border-left: 4px solid #34C759;';
+                        resultArea.parentNode.insertBefore(treatmentArea, resultArea.nextSibling);
+                    }
+
+                    if (result.treatment) {
+                        treatmentArea.innerHTML = `
+                            <div style="font-size: 14px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 1px; font-weight: 600; margin-bottom: 8px;">
+                                <i class="fa-solid fa-stethoscope"></i> Treatment Advice
+                            </div>
+                            <div style="color: var(--text-primary); line-height: 1.6; font-size: 0.95em;">
+                                ${result.treatment.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
+                            </div>
+                        `;
+                        treatmentArea.style.display = 'block';
+                    }
+
+                } catch (error) {
+                    console.error('Analysis error:', error);
+                    predictionText.textContent = 'Analysis Error';
+                    confidenceText.textContent = error.message || 'Could not connect to the AI service.';
+                    resultArea.style.display = 'block';
+                } finally {
                     predictButton.innerHTML = originalText;
                     predictButton.disabled = false;
                     clearButton.disabled = false;
-
-                }, 2000);
+                }
             });
         });
     </script>
