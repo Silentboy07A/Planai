@@ -44,7 +44,8 @@ mongoose.connect(MONGODB_URI)
 // Initialize Gemini
 // ---------------------------------------------------------------------------
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "dummy_key");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+console.log(`🤖 Gemini API Key loaded: ${process.env.GEMINI_API_KEY ? 'YES (' + process.env.GEMINI_API_KEY.substring(0, 10) + '...)' : 'NO'}`);
 
 // Plant Scope System Prompts
 const SYSTEM_PROMPT_DEFAULT = `
@@ -106,56 +107,38 @@ app.post('/api/chat', async (req, res) => {
 
     const systemPrompt = mode === 'expert' ? SYSTEM_PROMPT_EXPERT : SYSTEM_PROMPT_DEFAULT;
 
-    // 1. Try Gemini first
-    if (process.env.GEMINI_API_KEY) {
-        try {
-            console.log(`[Chat] Gemini (${mode} mode): ${message.substring(0, 50)}...`);
-
-            const chat = model.startChat({
-                history: [
-                    { role: "user", parts: [{ text: systemPrompt }] },
-                    { role: "model", parts: [{ text: "Understood. I am ready to assist with plant care." }] },
-                ],
-            });
-
-            const result = await chat.sendMessage(message);
-            const response = await result.response;
-            const text = response.text();
-
-            return res.json({ reply: text });
-        } catch (error) {
-            console.error("Gemini Error (falling back to Ollama):", error.message);
-        }
-    }
-
-    // 2. Fallback to Ollama
-    try {
-        console.log(`[Chat] Ollama (${mode} mode): ${message.substring(0, 50)}...`);
-
-        const messages = [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: message }
-        ];
-
-        const response = await axios.post(OLLAMA_URL, {
-            model: "llama3.1:8b",
-            messages,
-            stream: false
+    // Try Gemini (with one retry on rate limit)
+    const tryGemini = async () => {
+        const chat = model.startChat({
+            history: [
+                { role: "user", parts: [{ text: systemPrompt }] },
+                { role: "model", parts: [{ text: "Understood. I am ready to assist with plant care." }] },
+            ],
         });
+        const result = await chat.sendMessage(message);
+        return result.response.text();
+    };
 
-        return res.json({ reply: response.data.message.content });
+    try {
+        console.log(`[Chat] Gemini (${mode} mode): ${message.substring(0, 50)}...`);
+        const text = await tryGemini();
+        return res.json({ reply: text });
     } catch (error) {
-        console.error("Ollama Error:", error.message);
+        console.error("Gemini error:", error.message);
 
-        let errorMsg = "AI Service Unavailable.";
-        let suggestion = "";
-
-        if (error.code === 'ECONNREFUSED') {
-            errorMsg = "Could not connect to AI services.";
-            suggestion = "Please ensure Ollama is running or add a valid GEMINI_API_KEY.";
+        // Rate limited — retry once after 3s
+        if (error.message?.includes('429') || error.message?.includes('Resource has been exhausted')) {
+            try {
+                console.log("[Chat] Rate limited, retrying in 3s...");
+                await new Promise(r => setTimeout(r, 3000));
+                const text = await tryGemini();
+                return res.json({ reply: text });
+            } catch (e) {
+                return res.status(429).json({ error: "AI is busy. Please wait a moment and try again." });
+            }
         }
 
-        return res.status(503).json({ error: errorMsg, suggestion });
+        return res.status(503).json({ error: "AI error: " + error.message });
     }
 });
 

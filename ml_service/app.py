@@ -66,8 +66,8 @@ async def lifespan(app: FastAPI):
     api_key = os.getenv("GEMINI_API_KEY")
     if api_key:
         genai.configure(api_key=api_key)
-        gemini_text_model = genai.GenerativeModel("gemini-1.5-flash")
-        gemini_vision_model = genai.GenerativeModel("gemini-1.5-flash")
+        gemini_text_model = genai.GenerativeModel("gemini-2.0-flash")
+        gemini_vision_model = genai.GenerativeModel("gemini-2.0-flash")
         logger.info("Gemini (text + vision) configured")
     else:
         logger.warning("No GEMINI_API_KEY — Gemini Vision + treatment advice disabled")
