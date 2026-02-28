@@ -235,8 +235,8 @@
         }
     </style>
 
-    <!-- Supabase JS v2 from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
@@ -273,6 +273,11 @@
                 <button type="submit" class="btn-primary" id="login-btn">Sign In</button>
             </form>
 
+            <div class="divider">OR</div>
+
+            <!-- Google Sign-In button -->
+            <div id="google-signin-btn" style="display:flex;justify-content:center;"></div>
+
             <div class="signup-link">
                 Don't have an account? <a href="signup.html">Sign up free</a>
             </div>
@@ -284,10 +289,11 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // If already logged in, redirect to dashboard
             redirectIfLoggedIn();
+            initGoogleSignIn();
         });
 
+        // Email/Password login
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('login-btn');
@@ -306,6 +312,35 @@
                 btn.disabled = false;
             }
         });
+
+        // Google Sign-In
+        async function initGoogleSignIn() {
+            try {
+                const res = await fetch('/api/auth/google-client-id');
+                const { clientId } = await res.json();
+                if (!clientId) return;
+
+                google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: handleGoogleCredential,
+                });
+                google.accounts.id.renderButton(
+                    document.getElementById('google-signin-btn'),
+                    { theme: 'outline', size: 'large', width: 380, text: 'signin_with' }
+                );
+            } catch (e) {
+                console.log('Google Sign-In not available');
+            }
+        }
+
+        async function handleGoogleCredential(response) {
+            try {
+                await apiGoogleLogin(response.credential);
+                window.location.replace('./index.html');
+            } catch (err) {
+                alert('Google Sign-In Failed: ' + err.message);
+            }
+        }
     </script>
 </body>
 

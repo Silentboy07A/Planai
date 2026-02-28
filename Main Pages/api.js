@@ -121,6 +121,26 @@ function apiLogout() {
 }
 
 /**
+ * Google OAuth — send ID token to backend for verification.
+ */
+async function apiGoogleLogin(credential) {
+    const res = await fetch(`${API_BASE}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        throw new Error(data.error || 'Google sign-in failed');
+    }
+
+    saveAuth(data.token, data.user);
+    return data;
+}
+
+/**
  * Protect a page — redirect to login if not authenticated.
  * Call this at the top of protected pages.
  */

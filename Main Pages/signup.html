@@ -82,8 +82,8 @@
         }
     </style>
 
-    <!-- Supabase JS v2 from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
@@ -106,7 +106,13 @@
             </div>
             <button type="submit">Sign Up</button>
         </form>
-        <div class="link-text">
+
+        <div class="divider">OR</div>
+
+        <!-- Google Sign-In button -->
+        <div id="google-signin-btn" style="display:flex;justify-content:center;"></div>
+
+        <div class="link-text" style="margin-top:20px;">
             Already have an account? <a href="./Login.html">Log in</a>
         </div>
     </div>
@@ -118,6 +124,7 @@
         // Redirect if already logged in
         document.addEventListener('DOMContentLoaded', () => {
             redirectIfLoggedIn();
+            initGoogleSignIn();
         });
 
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
@@ -140,6 +147,35 @@
                 btn.disabled = false;
             }
         });
+
+        // Google Sign-In
+        async function initGoogleSignIn() {
+            try {
+                const res = await fetch('/api/auth/google-client-id');
+                const { clientId } = await res.json();
+                if (!clientId) return;
+
+                google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: handleGoogleCredential,
+                });
+                google.accounts.id.renderButton(
+                    document.getElementById('google-signin-btn'),
+                    { theme: 'outline', size: 'large', width: 380, text: 'signup_with' }
+                );
+            } catch (e) {
+                console.log('Google Sign-In not available');
+            }
+        }
+
+        async function handleGoogleCredential(response) {
+            try {
+                await apiGoogleLogin(response.credential);
+                window.location.replace('./index.html');
+            } catch (err) {
+                alert('Google Sign-In Failed: ' + err.message);
+            }
+        }
     </script>
 </body>
 
